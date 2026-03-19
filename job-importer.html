@@ -3,369 +3,340 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Job Importer</title>
+<title>Job Inbox</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f6f3; color: #37352f; min-height: 100vh; padding: 24px 16px; }
-  .container { max-width: 740px; margin: 0 auto; }
-  h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
-  .subtitle { color: #787774; margin-bottom: 24px; font-size: 0.93rem; }
-  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 14px; border: 1px solid #e9e9e7; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-  .card-title { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; color: #9ca3af; margin-bottom: 12px; }
-  .tabs { display: flex; gap: 4px; margin-bottom: 14px; }
-  .tab { padding: 7px 14px; border-radius: 7px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; background: #f3f4f6; color: #6b7280; transition: all 0.15s; }
-  .tab.active { background: #dbeafe; color: #1d4ed8; }
-  input[type="url"], textarea { width: 100%; border: 1px solid #e3e3e1; border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; font-family: inherit; background: #fbfaf8; transition: border-color 0.2s; }
-  input[type="url"]:focus, textarea:focus { outline: none; border-color: #93c5fd; }
-  textarea { resize: vertical; min-height: 100px; }
-  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-  button { padding: 9px 18px; border-radius: 8px; border: none; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-  .btn-primary { background: #2563eb; color: white; }
-  .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
-  .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
-  .btn-green { background: #16a34a; color: white; }
-  .btn-green:hover:not(:disabled) { background: #15803d; }
-  .btn-green:disabled { background: #86efac; cursor: not-allowed; }
-  .btn-ghost { background: #f3f4f6; color: #374151; }
-  .btn-ghost:hover { background: #e5e7eb; }
-  .progress-bar { height: 4px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin-top: 10px; }
-  .progress-fill { height: 100%; background: #2563eb; border-radius: 3px; transition: width 0.35s ease; }
-  .loading { display: flex; align-items: center; gap: 8px; color: #787774; font-size: 0.88rem; padding: 10px 0; }
-  .spinner { width: 16px; height: 16px; border: 2px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .msg-error { color: #ef4444; font-size: 0.85rem; margin-top: 8px; }
-  .msg-success { color: #16a34a; font-size: 0.85rem; margin-top: 8px; font-weight: 600; }
-  .preview-card { border: 1px solid #e9e9e7; border-radius: 10px; padding: 18px; margin-bottom: 12px; background: white; }
-  .preview-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
-  .preview-title-input { font-weight: 700; font-size: 1rem; border: 1px solid transparent; border-radius: 6px; padding: 3px 7px; width: 100%; background: transparent; font-family: inherit; }
-  .preview-title-input:hover { border-color: #e3e3e1; background: #fbfaf8; }
-  .preview-title-input:focus { outline: none; border-color: #93c5fd; background: white; }
-  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-  .meta-item label { font-size: 0.72rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 3px; }
-  .meta-item select, .meta-item input[type="text"] { width: 100%; border: 1px solid #e3e3e1; border-radius: 6px; padding: 6px 8px; font-size: 0.83rem; background: #fbfaf8; font-family: inherit; }
-  .meta-item select:focus, .meta-item input[type="text"]:focus { outline: none; border-color: #93c5fd; }
-  .cover-letter-box { border: 1px solid #dbeafe; border-radius: 8px; padding: 14px; background: #f0f7ff; margin-top: 10px; }
-  .cover-letter-label { font-size: 0.75rem; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-  .cover-letter-box textarea { background: white; font-size: 0.84rem; line-height: 1.6; min-height: 200px; }
-  .section-label { font-size: 0.75rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; margin: 12px 0 6px; }
-  .desc-box { font-size: 0.84rem; color: #555; line-height: 1.6; background: #fafaf9; border-radius: 7px; padding: 12px; border: 1px solid #f0f0ee; }
-  .badge { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; display: inline-block; }
-  .badge-green { background: #dcfce7; color: #166534; }
-  .divider { height: 1px; background: #f3f3f1; margin: 12px 0; }
-  .queue-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f3f3f1; font-size: 0.85rem; }
-  .queue-item:last-child { border-bottom: none; }
-  .queue-url { flex: 1; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .queue-status { font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
-  .qs-waiting { color: #9ca3af; } .qs-processing { color: #2563eb; } .qs-done { color: #16a34a; } .qs-error { color: #ef4444; }
-  .queue-remove { background: none; border: none; color: #d1d5db; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
-  .queue-remove:hover { color: #ef4444; background: #fee2e2; }
-  .action-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; background: #fafaf9; border-radius: 8px; border: 1px solid #f0f0ee; margin-bottom: 10px; }
-  .action-bar span { font-size: 0.82rem; color: #787774; flex: 1; }
-  @media (max-width: 500px) { .meta-grid { grid-template-columns: 1fr; } }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f6f3; color: #37352f; min-height: 100vh; padding: 20px 16px; }
+.container { max-width: 660px; margin: 0 auto; }
+h1 { font-size: 1.45rem; font-weight: 700; margin-bottom: 4px; }
+.subtitle { color: #787774; margin-bottom: 18px; font-size: 0.85rem; }
+.card { background: white; border-radius: 10px; padding: 16px; margin-bottom: 12px; border: 1px solid #e9e9e7; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #9ca3af; margin-bottom: 8px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.tab { padding: 6px 13px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.83rem; font-weight: 600; background: #f3f4f6; color: #6b7280; }
+.tab.active { background: #fef3c7; color: #92400e; }
+input[type="url"], textarea { width: 100%; border: 1px solid #e3e3e1; border-radius: 7px; padding: 9px 11px; font-size: 0.87rem; font-family: inherit; background: #fbfaf8; }
+textarea { resize: vertical; min-height: 90px; }
+.btn-row { display: flex; gap: 7px; margin-top: 9px; flex-wrap: wrap; }
+button { padding: 8px 15px; border-radius: 7px; border: none; font-size: 0.84rem; font-weight: 600; cursor: pointer; }
+.btn-a { background: #d97706; color: white; }
+.btn-a:hover { background: #b45309; }
+.btn-a:disabled { background: #fde68a; color: #92400e; cursor: not-allowed; }
+.btn-b { background: #16a34a; color: white; }
+.btn-b:hover:not(:disabled) { background: #15803d; }
+.btn-b:disabled { background: #86efac; cursor: not-allowed; }
+.btn-c { background: #f3f4f6; color: #374151; }
+.btn-c:hover { background: #e5e7eb; }
+.spin-wrap { display: flex; align-items: center; gap: 7px; color: #787774; font-size: 0.84rem; padding: 7px 0; }
+.spin { width: 14px; height: 14px; border: 2px solid #e5e7eb; border-top-color: #d97706; border-radius: 50%; animation: sp 0.7s linear infinite; flex-shrink: 0; }
+@keyframes sp { to { transform: rotate(360deg); } }
+.ok  { font-size: 0.82rem; color: #16a34a; margin-top: 6px; }
+.err { font-size: 0.82rem; color: #ef4444; margin-top: 6px; }
+.bar { height: 3px; background: #e5e7eb; border-radius: 2px; overflow: hidden; margin-top: 7px; display: none; }
+.fill { height: 100%; background: #d97706; border-radius: 2px; transition: width 0.3s; }
+.result { border: 1px solid #e9e9e7; border-radius: 8px; padding: 14px; }
+.rtitle { font-weight: 700; font-size: 0.98rem; margin-bottom: 5px; }
+.rmeta { font-size: 0.8rem; color: #6b7280; margin-bottom: 10px; }
+.rmeta span { margin-right: 10px; }
+.rlabel { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #9ca3af; margin: 10px 0 4px; }
+.rlist { padding-left: 16px; font-size: 0.83rem; line-height: 1.7; color: #374151; }
+.rdesc { font-size: 0.83rem; line-height: 1.6; color: #374151; }
+.badge { display: inline-block; font-size: 0.69rem; font-weight: 600; padding: 2px 7px; border-radius: 20px; }
+.ba { background: #fef3c7; color: #92400e; }
+.bd-w { background: #fee2e2; color: #991b1b; }
+.bd-o { background: #dcfce7; color: #166534; }
+.actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.empty { color: #9ca3af; text-align: center; font-size: 0.86rem; padding: 18px 0; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>💼 Job Importer</h1>
-  <p class="subtitle">Paste a job listing URL to auto-parse the role, detect the cover letter type, draft a cover letter, and save straight to <strong>Drafting</strong> in your tracker.</p>
-
+  <h1>&#x1F4E5; Job Inbox</h1>
+  <p class="subtitle">Parse a job listing and send it to your Waiting Room in Notion. Cover letters and fit scoring happen in the Waiting Room.</p>
   <div class="tabs">
-    <button class="tab active" onclick="switchMode('url')">🔗 Single URL</button>
-    <button class="tab" onclick="switchMode('batch')">📋 Batch URLs</button>
-    <button class="tab" onclick="switchMode('text')">📄 Paste Text</button>
+    <button class="tab active" id="tabUrl" onclick="switchTab('url')">&#x1F517; URL</button>
+    <button class="tab" id="tabTxt" onclick="switchTab('txt')">&#x1F4C4; Paste Text</button>
   </div>
-
-  <div class="card" id="inputCard">
-    <div id="modeUrl">
-      <div class="card-title">Job Listing URL</div>
-      <input type="url" id="singleUrl" placeholder="https://www.linkedin.com/jobs/view/... or reed.co.uk, indeed.com etc." />
+  <div class="card">
+    <div id="paneUrl">
+      <div class="label">Job Listing URL</div>
+      <input type="url" id="urlIn" placeholder="https://www.reed.co.uk/jobs/... or any job board URL" />
       <div class="btn-row">
-        <button class="btn-primary" onclick="parseSingle()" id="parseBtn">✨ Parse Job</button>
+        <button class="btn-a" id="parseBtn" onclick="parseUrl()">&#x1F50D; Parse Job</button>
+        <button class="btn-c" onclick="reset()">&#x2715; Clear</button>
       </div>
-      <div id="singleStatus"></div>
-      <div class="progress-bar" id="singleProgress" style="display:none"><div class="progress-fill" id="singleFill" style="width:0%"></div></div>
+      <div id="urlMsg"></div>
+      <div class="bar" id="bar"><div class="fill" id="fill"></div></div>
     </div>
-
-    <div id="modeBatch" style="display:none">
-      <div class="card-title">Batch URLs — one per line</div>
-      <textarea id="batchUrls" placeholder="https://www.linkedin.com/jobs/view/123&#10;https://www.reed.co.uk/jobs/football-coach/456&#10;https://www.indeed.com/viewjob?jk=789"></textarea>
-      <div class="btn-row"><button class="btn-primary" onclick="loadBatch()">📋 Load to Queue</button></div>
-    </div>
-
-    <div id="modeText" style="display:none">
-      <div class="card-title">Paste Job Listing Text</div>
-      <textarea id="pasteText" style="min-height:140px" placeholder="Paste the full job listing text here — title, organisation, description, requirements and all."></textarea>
-      <div class="btn-row"><button class="btn-primary" onclick="parseText()" id="textBtn">✨ Parse Pasted Text</button></div>
-      <div id="textStatus"></div>
-      <div class="progress-bar" id="textProgress" style="display:none"><div class="progress-fill" id="textFill" style="width:0%"></div></div>
+    <div id="paneTxt" style="display:none">
+      <div class="label">Paste Job Description</div>
+      <textarea id="txtIn" placeholder="Paste job title, company, description, requirements..."></textarea>
+      <div class="btn-row">
+        <button class="btn-a" id="parseTxtBtn" onclick="parseTxt()">&#x1F50D; Parse Job</button>
+        <button class="btn-c" onclick="reset()">&#x2715; Clear</button>
+      </div>
+      <div id="txtMsg"></div>
     </div>
   </div>
-
-  <div class="card" id="queueCard" style="display:none">
-    <div class="card-title">Queue</div>
-    <div class="action-bar">
-      <span id="queueSummary">0 URLs loaded</span>
-      <button class="btn-primary" onclick="processQueue()" id="processQueueBtn">▶ Process All</button>
-      <button class="btn-ghost" onclick="clearQueue()">✕ Clear</button>
-    </div>
-    <div id="queueList"></div>
-    <div id="queueStatus"></div>
-  </div>
-
-  <div id="previewArea"></div>
+  <div id="resultArea"></div>
 </div>
-
 <script>
-// Repo: https://cadenspooner47.github.io/notion-hub/job-importer.html
-// Proxy: replace PROXY_URL below with your Cloudflare Worker URL
-const PROXY_URL  = 'notion-hub.caden-spooner47.workers.dev';
-const NOTION_MCP = PROXY_URL + '/notion/mcp';
-const JOBS_DS    = '29dc7279-2c19-45f3-a57b-5267620828c6';
-const MODEL      = 'claude-sonnet-4-6';
-const API        = PROXY_URL + '/anthropic/v1/messages';
+var PROXY = 'https://notion-hub.caden-spooner47.workers.dev';
+var API   = PROXY + '/anthropic/v1/messages';
+var MODEL = 'claude-sonnet-4-6';
+var JOBS_DS    = '29dc7279-2c19-45f3-a57b-5267620828c6';
+var NOTION_API = PROXY + '/notion';
 
-const COVER_LETTER_TYPES = ['Football Coaching','Athletic Training / S&C','Education / Teaching','Youth Work / Social Dev','Data Analysis / Research','Other'];
+var currentJob = null;
 
-let queue = [], previews = [];
+var SYS = 'Extract job listing data and return ONLY this JSON (no markdown):\n' +
+  '{' +
+    '"title":"job title",' +
+    '"company":"company name",' +
+    '"location":"city or remote",' +
+    '"contractType":"Full-time or Part-time or Contract or Volunteer or Other",' +
+    '"salary":"salary info or null",' +
+    '"deadline":"YYYY-MM-DD if found else null",' +
+    '"description":"2-3 sentence summary of the role",' +
+    '"requirements":["req1","req2","req3"],' +
+    '"jobType":"one of: Football Coaching or Athletic Training / S&C or Education / Teaching or Youth Work / Social Dev or Data Analysis / Research or Other"' +
+  '}\n' +
+  'jobType: Football Coaching=coaching/football/soccer; Athletic Training=S&C/conditioning/sports science; Education=teaching/school/college; Youth Work=youth worker/community/charity; Data Analysis=data analyst/researcher/analytics; Other=anything else.';
 
-function el(id)            { return document.getElementById(id); }
-function setHtml(id, html) { el(id).innerHTML = html; }
-function show(id)          { el(id).style.display = ''; }
-function hide(id)          { el(id).style.display = 'none'; }
-function setProgress(f,b,p){ show(b); el(f).style.width = p+'%'; }
-function loading(msg)      { return `<div class="loading"><div class="spinner"></div>${msg}</div>`; }
-function escHtml(s)        { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function switchTab(t) {
+  document.getElementById('paneUrl').style.display = t === 'url' ? '' : 'none';
+  document.getElementById('paneTxt').style.display = t === 'txt' ? '' : 'none';
+  document.getElementById('tabUrl').className = 'tab' + (t === 'url' ? ' active' : '');
+  document.getElementById('tabTxt').className = 'tab' + (t === 'txt' ? ' active' : '');
+}
 
-function switchMode(mode) {
-  ['url','batch','text'].forEach((m,i) => {
-    el('mode'+m[0].toUpperCase()+m.slice(1)).style.display = m===mode?'':'none';
-    document.querySelectorAll('.tab')[i].classList.toggle('active', m===mode);
+function setMsg(id, html) { document.getElementById(id).innerHTML = html; }
+function setResult(html) { document.getElementById('resultArea').innerHTML = html; }
+function spin(msg) { return '<div class="spin-wrap"><div class="spin"></div>' + msg + '</div>'; }
+function setBar(pct) { var b = document.getElementById('bar'); b.style.display = ''; document.getElementById('fill').style.width = pct + '%'; }
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function post(body) {
+  return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.error) throw new Error(d.error.message);
+      return d.content.filter(function(b) { return b.type === 'text'; }).map(function(b) { return b.text; }).join('');
+    });
+}
+
+function parseResponse(raw, sourceUrl) {
+  var m = raw.match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  try {
+    var j = JSON.parse(m[0]);
+    if (sourceUrl) j.sourceUrl = sourceUrl;
+    return j;
+  } catch(e) { return null; }
+}
+
+function parseUrl() {
+  var url = document.getElementById('urlIn').value.trim();
+  if (!url) { setMsg('urlMsg', '<p class="err">Please enter a URL.</p>'); return; }
+  document.getElementById('parseBtn').disabled = true;
+  setMsg('urlMsg', spin('Fetching job listing...'));
+  setBar(15);
+  setResult('');
+  currentJob = null;
+
+  fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 800,
+      system: SYS,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      messages: [{ role: 'user', content: 'Fetch and extract the job listing from: ' + url }]
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.error) throw new Error(d.error.message);
+    var raw = d.content.filter(function(b) { return b.type === 'text'; }).map(function(b) { return b.text; }).join('');
+    setBar(100);
+    var job = parseResponse(raw, url);
+    if (!job || !job.title) throw new Error('Could not extract job details — try Paste Text instead.');
+    currentJob = job;
+    renderResult(job);
+    setMsg('urlMsg', '');
+  })
+  .catch(function(e) {
+    setMsg('urlMsg', '<p class="err">Error: ' + esc(e.message) + '</p>');
+    document.getElementById('bar').style.display = 'none';
+  })
+  .finally(function() {
+    document.getElementById('parseBtn').disabled = false;
   });
-  hide('queueCard');
 }
 
-async function callClaude(messages, system, useMCP, useWebSearch) {
-  const body = { model: MODEL, max_tokens: 2000, system: system||'', messages };
-  if (useMCP) body.mcp_servers = [{ type:'url', url:NOTION_MCP, name:'notion' }];
-  if (useWebSearch) body.tools = [{ type:'web_search_20250305', name:'web_search' }];
-  const res  = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  const texts     = data.content.filter(b=>b.type==='text').map(b=>b.text);
-  const toolRes   = data.content.filter(b=>b.type==='mcp_tool_result').map(b=>b.content?.[0]?.text||'');
-  const searchRes = data.content.filter(b=>b.type==='tool_result').map(b=>
-    Array.isArray(b.content)?b.content.map(c=>c.text||'').join(''):(b.content||''));
-  return [...texts,...toolRes,...searchRes].join('\n');
+function parseTxt() {
+  var txt = document.getElementById('txtIn').value.trim();
+  if (!txt) { setMsg('txtMsg', '<p class="err">Please paste some job listing text.</p>'); return; }
+  document.getElementById('parseTxtBtn').disabled = true;
+  setMsg('txtMsg', spin('Extracting job details...'));
+  setResult('');
+  currentJob = null;
+
+  post({ model: MODEL, max_tokens: 800, system: SYS, messages: [{ role: 'user', content: 'Extract job listing from:\n\n' + txt.slice(0, 4000) }] })
+  .then(function(raw) {
+    var job = parseResponse(raw, '');
+    if (!job || !job.title) throw new Error('Could not extract job details.');
+    currentJob = job;
+    renderResult(job);
+    setMsg('txtMsg', '');
+  })
+  .catch(function(e) { setMsg('txtMsg', '<p class="err">Error: ' + esc(e.message) + '</p>'); })
+  .finally(function() { document.getElementById('parseTxtBtn').disabled = false; });
 }
 
-async function fetchUrl(url) {
-  return callClaude([{role:'user',content:`Please fetch and return the full job listing content from this URL: ${url}
-
-Use the web search tool to retrieve this page. Return all the text you find including the job title, organisation, description, requirements, salary, and any deadline or closing date. Do not summarise — return as much content as possible.`}],
-    'You are a web retrieval assistant. Use the web_search tool to fetch the given URL and return ALL the text content from the page. Include the full job description, requirements, and any dates mentioned. Do not truncate.', false, true);
+function deadlineBadge(dl) {
+  if (!dl) return '';
+  var days = Math.round((new Date(dl) - new Date()) / 86400000);
+  var cls = days <= 7 ? 'bd-w' : 'bd-o';
+  var txt = days < 0 ? 'Deadline passed' : days === 0 ? 'TODAY' : days + ' days left';
+  return ' <span class="badge ' + cls + '">&#x23F0; ' + esc(txt) + ' (' + esc(dl) + ')</span>';
 }
 
-const PARSE_SYSTEM = `Extract job info and return ONLY this JSON (no markdown, no preamble):
-{"roleTitle":"","organisation":"","location":"","jobType":"one of: Football Coaching|Athletic Training / S&C|Education / Teaching|Youth Work / Social Dev|Data Analysis / Research|Other","description":"2-4 sentence summary","requirements":["req1","req2"],"salary":"or null","applicationDeadline":"YYYY-MM-DD if found anywhere on the page (closing date, deadline, apply by, expires) — else null","sourceUrl":""}
-jobType rules: Football Coaching=coaching/football/soccer/manager/academy; Athletic Training/S&C=strength/conditioning/S&C/sports science/fitness; Education/Teaching=teacher/tutor/lecturer/school/college/PGCE; Youth Work/Social Dev=youth worker/community/charity/outreach; Data Analysis/Research=data analyst/researcher/SQL/python/analytics; Other=anything else.
-For applicationDeadline: look for any mention of closing date, deadline, apply by, application deadline, expires, last date to apply. Convert to YYYY-MM-DD. If no date found, return null.`;
-
-async function parseJobText(text, sourceUrl) {
-  const raw = await callClaude([{role:'user',content:`Parse this job listing.\nSource: ${sourceUrl||'unknown'}\n\n${text.slice(0,8000)}`}], PARSE_SYSTEM, false, false);
-  const m = raw.match(/\{[\s\S]*\}/);
-  if (!m) throw new Error('Could not extract job structure from page');
-  return JSON.parse(m[0]);
+function renderResult(job) {
+  var reqs = (job.requirements || []).map(function(r) { return '<li>' + esc(r) + '</li>'; }).join('');
+  var html = '<div class="card"><div class="result">' +
+    '<div class="rtitle">' + esc(job.title) + '</div>' +
+    '<div class="rmeta">' +
+      (job.company   ? '<span>&#x1F3E2; ' + esc(job.company)   + '</span>' : '') +
+      (job.location  ? '<span>&#x1F4CD; ' + esc(job.location)  + '</span>' : '') +
+      (job.contractType ? '<span>' + esc(job.contractType) + '</span>' : '') +
+      (job.salary    ? '<span>&#x1F4B0; ' + esc(job.salary)    + '</span>' : '') +
+    '</div>' +
+    '<span class="badge ba">&#x1F916; ' + esc(job.jobType || 'Other') + '</span>' +
+    deadlineBadge(job.deadline) +
+    '<div class="rlabel">Description</div><div class="rdesc">' + esc(job.description || '') + '</div>' +
+    (reqs ? '<div class="rlabel">Key Requirements</div><ul class="rlist">' + reqs + '</ul>' : '') +
+    '</div>' +
+    '<div class="actions">' +
+      '<button class="btn-b" id="saveBtn" onclick="saveToWaitingRoom()">&#x2795; Add to Waiting Room</button>' +
+      '<button class="btn-c" onclick="reset()">&#x2715; Discard</button>' +
+    '</div>' +
+    '<div id="saveMsg"></div>' +
+    '</div>';
+  setResult(html);
 }
 
-async function generateCoverLetter(job) {
-  const raw = await callClaude([{role:'user',content:`Write a professional 3-4 paragraph cover letter for:
-Role: ${job.roleTitle}
-Organisation: ${job.organisation}
-Location: ${job.location}
-Type: ${job.jobType}
-Description: ${job.description}
-Requirements: ${(job.requirements||[]).join(', ')}
-
-Guidelines: Be enthusiastic and specific. Reference the organisation by name. Connect the applicant's background in ${job.jobType} to the requirements. End with a clear call to action. Do NOT use placeholder brackets. Start with "Dear Hiring Team," or "Dear [Organisation] Team,"`}],
-    'You are an expert cover letter writer. Return only the cover letter text, no preamble.', false, false);
-  return raw.trim();
-}
-
-function deadlineBadge(deadline) {
-  if (!deadline) return '';
-  const today = new Date(); today.setHours(0,0,0,0);
-  const due = new Date(deadline);
-  const days = Math.round((due - today) / 86400000);
-  if (days < 0)  return `<div style="margin-bottom:10px"><span class="badge" style="background:#fee2e2;color:#991b1b">⛔ Deadline passed (${deadline})</span></div>`;
-  if (days === 0) return `<div style="margin-bottom:10px"><span class="badge" style="background:#fee2e2;color:#991b1b">🚨 Deadline TODAY</span></div>`;
-  if (days <= 3)  return `<div style="margin-bottom:10px"><span class="badge" style="background:#ffedd5;color:#9a3412">🔥 ${days} day${days!==1?'s':''} left (${deadline})</span></div>`;
-  if (days <= 7)  return `<div style="margin-bottom:10px"><span class="badge" style="background:#fef9c3;color:#854d0e">⚠️ ${days} days left (${deadline})</span></div>`;
-  return `<div style="margin-bottom:10px"><span class="badge" style="background:#dcfce7;color:#166534">📅 ${days} days left (${deadline})</span></div>`;
-}
-
-async function saveJobToNotion(job, coverLetter) {
-  const content = `## 📋 Role Overview\n\n| | |\n|---|---|\n| 🏢 Organisation | ${job.organisation||''} |\n| 📍 Location | ${job.location||''} |\n| 💼 Job Type | ${job.jobType||''} |\n| 💰 Salary | ${job.salary||'Not specified'} |\n| ⏰ Application Deadline | ${job.applicationDeadline||'Not specified'} |\n\n---\n\n## 📝 Description\n\n${job.description||''}\n\n---\n\n## ✅ Key Requirements\n\n${(job.requirements||[]).map(r=>'- '+r).join('\n')}\n\n---\n\n## ✉️ Cover Letter Draft\n\n${coverLetter||'_No cover letter generated yet._'}\n\n---\n\n## 📎 Notes\n\n> Add interview notes, contacts, and follow-up actions here.\n\n---\n\n## 📊 Application Feedback\n\n> Fill this section in once you receive a response. Tick **Feedback Received** in the properties and set **Application Outcome** to keep your tracker accurate.\n\n### 📄 CV Feedback\n\n> What did they say about your CV? Experience, formatting, gaps, relevance.\n\n*No feedback recorded yet.*\n\n### ✉️ Cover Letter Feedback\n\n> What did they say about your cover letter? Tone, specificity, fit.\n\n*No feedback recorded yet.*\n\n### ✅ What Worked\n\n> What elements of this application were positively received?\n\n*No notes yet.*\n\n### 🔧 What To Improve\n\n> What would you do differently next time for this type of role?\n\n*No notes yet.*\n\n### 🔁 Patterns To Track\n\n> Any recurring themes across multiple applications of this type?\n\n*Add notes here as you gather more feedback.*`;
-
-  const deadlineProp = job.applicationDeadline
-    ? `- date:Application Deadline:start: "${job.applicationDeadline}"\n- date:Application Deadline:is_datetime: 0`
-    : '';
-
-  const result = await callClaude([{role:'user',content:`Create a new page in Notion Job Application Tracker (collection://${JOBS_DS}) with:
-- Role Title: "${job.roleTitle}"
-- Organisation: "${job.organisation||''}"
-- Location: "${job.location||''}"
-- Stage: "Drafting"
-- Cover Letter Template: "${job.jobType||'Other'}"
-- Job Posting: "${job.sourceUrl||''}"
-${deadlineProp}
-
-Page content:\n${content}\n\nConfirm with the page URL.`}],
-    'You are a Notion assistant. Create the page using Notion MCP tools. Confirm with URL when done.', true, false);
-
-  const m = result.match(/https:\/\/www\.notion\.so\/[a-z0-9]+/i);
-  return m ? m[0] : null;
-}
-
-async function parseSingle() {
-  const url = el('singleUrl').value.trim();
-  if (!url) { setHtml('singleStatus','<p class="msg-error">Please enter a URL.</p>'); return; }
-  const btn = el('parseBtn'); btn.disabled=true; btn.textContent='Parsing…';
-  setHtml('singleStatus',loading('Fetching job listing…')); setProgress('singleFill','singleProgress',10);
-  try {
-    const pageText = await fetchUrl(url);
-    setHtml('singleStatus',loading('Extracting job details…')); setProgress('singleFill','singleProgress',40);
-    const job = await parseJobText(pageText, url); job.sourceUrl = url;
-    setHtml('singleStatus',loading('Drafting cover letter…')); setProgress('singleFill','singleProgress',70);
-    const coverLetter = await generateCoverLetter(job);
-    setProgress('singleFill','singleProgress',100);
-    setHtml('singleStatus','<p class="msg-success">✅ Parsed! Review and edit below before saving.</p>');
-    previews = [{job, coverLetter, saved:false}]; renderPreviews();
-  } catch(e) { setHtml('singleStatus',`<p class="msg-error">Error: ${e.message}</p>`); hide('singleProgress'); }
-  finally { btn.disabled=false; btn.textContent='✨ Parse Job'; }
-}
-
-async function parseText() {
-  const text = el('pasteText').value.trim();
-  if (!text) { setHtml('textStatus','<p class="msg-error">Please paste some job listing text.</p>'); return; }
-  const btn = el('textBtn'); btn.disabled=true; btn.textContent='Parsing…';
-  setHtml('textStatus',loading('Extracting job details…')); setProgress('textFill','textProgress',25);
-  try {
-    const job = await parseJobText(text,'');
-    setHtml('textStatus',loading('Drafting cover letter…')); setProgress('textFill','textProgress',65);
-    const coverLetter = await generateCoverLetter(job);
-    setProgress('textFill','textProgress',100);
-    setHtml('textStatus','<p class="msg-success">✅ Parsed! Review and edit below before saving.</p>');
-    previews = [{job, coverLetter, saved:false}]; renderPreviews();
-  } catch(e) { setHtml('textStatus',`<p class="msg-error">Error: ${e.message}</p>`); hide('textProgress'); }
-  finally { btn.disabled=false; btn.textContent='✨ Parse Pasted Text'; }
-}
-
-function loadBatch() {
-  const lines = el('batchUrls').value.split('\n').map(l=>l.trim()).filter(l=>l.startsWith('http'));
-  if (!lines.length) { alert('No valid URLs found.'); return; }
-  queue = lines.map(url=>({url,status:'waiting',job:null,coverLetter:null}));
-  show('queueCard'); renderQueue();
-}
-
-function renderQueue() {
-  el('queueSummary').textContent = `${queue.length} URL${queue.length!==1?'s':''} — ${queue.filter(q=>q.status==='done').length} done`;
-  setHtml('queueList', queue.map((item,i)=>`
-    <div class="queue-item">
-      <div class="queue-url">${item.url}</div>
-      <span class="queue-status qs-${item.status}">${item.status==='waiting'?'⏳ Waiting':item.status==='processing'?'⚡ Parsing…':item.status==='done'?'✅ Done':'❌ Error'}</span>
-      ${item.status==='waiting'?`<button class="queue-remove" onclick="queue.splice(${i},1);renderQueue()">✕</button>`:''}
-    </div>`).join(''));
-}
-
-function clearQueue() { queue=[]; hide('queueCard'); setHtml('previewArea',''); }
-
-async function processQueue() {
-  const btn=el('processQueueBtn'); btn.disabled=true; btn.textContent='⏳ Processing…';
-  previews=[];
-  for (let i=0;i<queue.length;i++) {
-    if (queue[i].status==='done') continue;
-    queue[i].status='processing'; renderQueue();
-    try {
-      const pageText=await fetchUrl(queue[i].url);
-      const job=await parseJobText(pageText,queue[i].url); job.sourceUrl=queue[i].url;
-      const coverLetter=await generateCoverLetter(job);
-      queue[i].job=job; queue[i].coverLetter=coverLetter; queue[i].status='done';
-      previews.push({job,coverLetter,saved:false});
-    } catch(e) { queue[i].status='error'; }
-    renderQueue(); renderPreviews();
-  }
-  btn.disabled=false; btn.textContent='▶ Process All';
-  setHtml('queueStatus',`<p class="msg-success">✅ Done — ${previews.length} job${previews.length!==1?'s':''} ready to review below.</p>`);
-}
-
-function renderPreviews() {
-  if (!previews.length) { setHtml('previewArea',''); return; }
-  const hasUnsaved = previews.some(p=>!p.saved);
-  let html = `<div class="card"><div class="card-title">Review & Edit — ${previews.length} Job${previews.length!==1?'s':''}</div>
-    ${hasUnsaved
-      ?`<div class="action-bar" style="margin-bottom:14px"><span>${previews.filter(p=>!p.saved).length} unsaved</span><button class="btn-green" onclick="saveAll()" id="saveAllBtn">💾 Save All to Notion</button></div>`
-      :'<p class="msg-success" style="margin-bottom:14px">✅ All jobs saved to Notion in Drafting!</p>'}`;
-
-  previews.forEach((p,idx)=>{
-    const j=p.job;
-    html+=`<div class="preview-card" id="preview-${idx}">
-      <div class="preview-header">
-        <input class="preview-title-input" type="text" value="${escHtml(j.roleTitle||'')}" onchange="previews[${idx}].job.roleTitle=this.value" />
-        ${p.saved?'<span class="badge badge-green">✅ Saved to Drafting</span>':`<button class="btn-green" onclick="saveSingle(${idx})" id="saveBtn-${idx}">💾 Save</button>`}
-      </div>
-      <div class="meta-grid">
-        <div class="meta-item"><label>Organisation</label><input type="text" value="${escHtml(j.organisation||'')}" onchange="previews[${idx}].job.organisation=this.value" /></div>
-        <div class="meta-item"><label>Location</label><input type="text" value="${escHtml(j.location||'')}" onchange="previews[${idx}].job.location=this.value" /></div>
-        <div class="meta-item"><label>Cover Letter Type</label>
-          <select onchange="previews[${idx}].job.jobType=this.value;regenerateCoverLetter(${idx})">
-            ${COVER_LETTER_TYPES.map(t=>`<option ${j.jobType===t?'selected':''}>${t}</option>`).join('')}
-          </select>
-        </div>
-        <div class="meta-item"><label>Salary</label><input type="text" value="${escHtml(j.salary||'')}" onchange="previews[${idx}].job.salary=this.value" /></div>
-        <div class="meta-item"><label>Application Deadline</label><input type="date" value="${escHtml(j.applicationDeadline||'')}" onchange="previews[${idx}].job.applicationDeadline=this.value||null" style="width:100%;border:1px solid #e3e3e1;border-radius:6px;padding:6px 8px;font-size:0.83rem;background:#fbfaf8;font-family:inherit" /></div>
-      </div>
-      ${deadlineBadge(j.applicationDeadline)}
-      <div class="section-label">📝 Role Summary</div>
-      <div class="desc-box">${escHtml(j.description||'')}</div>
-      <div class="cover-letter-box">
-        <div class="cover-letter-label">✉️ Cover Letter Draft
-          <button class="btn-ghost" style="font-size:0.78rem;padding:3px 8px" onclick="regenerateCoverLetter(${idx})" id="regenBtn-${idx}">↺ Regenerate</button>
-        </div>
-        <textarea id="coverLetter-${idx}" onchange="previews[${idx}].coverLetter=this.value">${escHtml(p.coverLetter||'')}</textarea>
-      </div>
-      <div id="saveStatus-${idx}"></div>
-    </div>`;
+function buildNotionChildren(j) {
+  var rows = [
+    ['Organisation', j.company || ''],
+    ['Location', j.location || ''],
+    ['Contract', j.contractType || ''],
+    ['Salary', j.salary || 'Not specified'],
+    ['Deadline', j.deadline || 'Not specified'],
+    ['Job Type', j.jobType || '']
+  ];
+  var tableRows = rows.map(function(row) {
+    return {
+      type: 'table_row',
+      table_row: { cells: [[{type:'text',text:{content:row[0]}}], [{type:'text',text:{content:row[1]}}]] }
+    };
   });
-  setHtml('previewArea', html+'</div>');
+
+  var reqItems = (j.requirements || []).map(function(r) {
+    return { type: 'numbered_list_item', numbered_list_item: { rich_text: [{type:'text',text:{content:r}}] } };
+  });
+
+  return [
+    { type: 'heading_2', heading_2: { rich_text: [{type:'text',text:{content:'Role Overview'}}] } },
+    { type: 'table', table: { table_width: 2, has_column_header: false, has_row_header: true, children: tableRows } },
+    { type: 'heading_2', heading_2: { rich_text: [{type:'text',text:{content:'Description'}}] } },
+    { type: 'paragraph', paragraph: { rich_text: [{type:'text',text:{content: j.description || ''}}] } },
+    { type: 'heading_2', heading_2: { rich_text: [{type:'text',text:{content:'Key Requirements'}}] } }
+  ].concat(reqItems.length ? reqItems : [
+    { type: 'paragraph', paragraph: { rich_text: [{type:'text',text:{content:'No requirements extracted.'}}] } }
+  ]).concat([
+    { type: 'heading_2', heading_2: { rich_text: [{type:'text',text:{content:'\u2709\ufe0f Cover Letter Draft'}}] } },
+    { type: 'callout', callout: { rich_text: [{type:'text',text:{content:'Cover letter not yet generated. Open the Waiting Room page in Claude and ask it to process this entry.'}}], icon: {type:'emoji',emoji:'\u23f3'} } },
+    { type: 'heading_2', heading_2: { rich_text: [{type:'text',text:{content:'\uD83C\uDFAF CV Fit Assessment'}}] } },
+    { type: 'callout', callout: { rich_text: [{type:'text',text:{content:'Fit not yet assessed. Open the Waiting Room page in Claude and ask it to process this entry.'}}], icon: {type:'emoji',emoji:'\uD83C\uDFAF'} } },
+    { type: 'heading_2', heading_2: { rich_text: [{type:'text',text:{content:'\uD83D\uDCCE Application Feedback'}}] } },
+    { type: 'callout', callout: { rich_text: [{type:'text',text:{content:'Add feedback here once you receive a response.'}}], icon: {type:'emoji',emoji:'\uD83D\uDCCE'} } }
+  ]);
 }
 
-async function regenerateCoverLetter(idx) {
-  const btn=el(`regenBtn-${idx}`), ta=el(`coverLetter-${idx}`);
-  if(btn){btn.disabled=true;btn.textContent='Generating…';} if(ta)ta.style.opacity='0.4';
-  try {
-    const newLetter=await generateCoverLetter(previews[idx].job);
-    previews[idx].coverLetter=newLetter;
-    if(ta){ta.value=newLetter;ta.style.opacity='1';}
-  } catch(e){if(ta)ta.style.opacity='1';}
-  finally{if(btn){btn.disabled=false;btn.textContent='↺ Regenerate';}}
+function buildNotionProperties(j, today) {
+  var props = {
+    'Role Title': { title: [{type:'text',text:{content: j.title || ''}}] },
+    'Organisation': { rich_text: [{type:'text',text:{content: j.company || ''}}] },
+    'Location':     { rich_text: [{type:'text',text:{content: j.location || ''}}] },
+    'Stage':        { select: { name: '\u23f3 Waiting Room' } },
+    'Cover Letter Template': { select: { name: j.jobType || 'Other' } },
+    'Tasks Pending': { select: { name: '\u23f3 Fit + Cover Letter' } },
+    'Notes':        { rich_text: [{type:'text',text:{content: j.description || ''}}] },
+    'Date Applied': { date: { start: today } }
+  };
+  if (j.sourceUrl) props['Job Posting'] = { url: j.sourceUrl };
+  if (j.deadline)  props['Application Deadline'] = { date: { start: j.deadline } };
+  return props;
 }
 
-async function saveSingle(idx) {
-  const ta=el(`coverLetter-${idx}`); if(ta) previews[idx].coverLetter=ta.value;
-  const btn=el(`saveBtn-${idx}`); if(btn){btn.disabled=true;btn.textContent='Saving…';}
-  setHtml(`saveStatus-${idx}`,loading('Saving to Notion Drafting…'));
-  try {
-    const notionUrl=await saveJobToNotion(previews[idx].job,previews[idx].coverLetter);
-    previews[idx].saved=true;
-    setHtml(`saveStatus-${idx}`,`<p class="msg-success">✅ Added to Drafting! ${notionUrl?`<a href="${notionUrl}" target="_blank" style="color:#16a34a">Open in Notion →</a>`:''}</p>`);
-    renderPreviews();
-  } catch(e){if(btn){btn.disabled=false;btn.textContent='💾 Save';}setHtml(`saveStatus-${idx}`,`<p class="msg-error">Error: ${e.message}</p>`);}
+function saveToWaitingRoom() {
+  if (!currentJob) return;
+  var btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  setMsg('saveMsg', spin('Adding to Waiting Room in Notion...'));
+
+  var j = currentJob;
+  var today = new Date().toISOString().split('T')[0];
+
+  var payload = {
+    parent: { database_id: JOBS_DS },
+    properties: buildNotionProperties(j, today),
+    children: buildNotionChildren(j)
+  };
+
+  fetch(NOTION_API + '/pages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.object === 'error') throw new Error(d.message);
+    var pageUrl = d.url || ('https://www.notion.so/' + (d.id || '').replace(/-/g, ''));
+    setMsg('saveMsg', '<p class="ok">&#x2705; Added to Waiting Room! <a href="' + pageUrl + '" target="_blank" style="color:#16a34a">Open in Notion &#x2192;</a></p>');
+    btn.textContent = '&#x2705; Saved';
+  })
+  .catch(function(e) {
+    setMsg('saveMsg', '<p class="err">Error saving to Notion: ' + esc(e.message) + '</p>');
+    btn.disabled = false;
+    btn.textContent = '&#x2795; Add to Waiting Room';
+  });
 }
 
-async function saveAll() {
-  const btn=el('saveAllBtn'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
-  for(let i=0;i<previews.length;i++) if(!previews[i].saved) await saveSingle(i);
+function reset() {
+  document.getElementById('urlIn').value = '';
+  document.getElementById('txtIn').value = '';
+  setMsg('urlMsg', '');
+  setMsg('txtMsg', '');
+  document.getElementById('bar').style.display = 'none';
+  setResult('');
+  currentJob = null;
 }
+
+// Bookmarklet prefill
+(function() {
+  var p = new URLSearchParams(window.location.search).get('prefill');
+  if (!p) return;
+  switchTab('txt');
+  document.getElementById('txtIn').value = decodeURIComponent(p);
+  setMsg('txtMsg', '<p class="ok">&#x2705; Job details loaded. Hit Parse Job to continue.</p>');
+})();
 </script>
 </body>
 </html>
