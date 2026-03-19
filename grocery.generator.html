@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grocery List Generator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f7f6f3; color: #37352f;
+    min-height: 100vh; padding: 24px 16px;
+  }
+  .container { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #787774; margin-bottom: 24px; font-size: 0.93rem; }
+
+  .card {
+    background: white; border-radius: 12px; padding: 20px;
+    margin-bottom: 14px; border: 1px solid #e9e9e7;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .card-title {
+    font-weight: 700; font-size: 0.85rem; text-transform: uppercase;
+    letter-spacing: 0.07em; color: #787774; margin-bottom: 14px;
+  }
+
+  .step-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid #f3f3f1;
+  }
+  .step-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #ede9fe; color: #5b21b6;
+    font-size: 0.75rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .step-text { font-size: 0.88rem; color: #555; flex: 1; }
+  .step-status { font-size: 0.8rem; font-weight: 600; }
+  .status-done { color: #16a34a; }
+  .status-pending { color: #9ca3af; }
+  .status-error { color: #ef4444; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap; }
+  button {
+    padding: 9px 18px; border-radius: 8px; border: none;
+    font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-primary { background: #7c3aed; color: white; }
+  .btn-primary:hover:not(:disabled) { background: #6d28d9; }
+  .btn-primary:disabled { background: #c4b5fd; cursor: not-allowed; }
+  .btn-secondary { background: #f3f4f6; color: #374151; }
+  .btn-secondary:hover { background: #e5e7eb; }
+  .btn-green { background: #16a34a; color: white; }
+  .btn-green:hover:not(:disabled) { background: #15803d; }
+  .btn-green:disabled { background: #86efac; cursor: not-allowed; }
+
+  .progress-bar { height: 4px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin-top: 12px; }
+  .progress-fill { height: 100%; background: #7c3aed; border-radius: 3px; transition: width 0.4s ease; }
+
+  .ingredient-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 4px; }
+  .ingredient-table th {
+    text-align: left; font-size: 0.75rem; font-weight: 700; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 8px 10px; border-bottom: 1px solid #f3f3f1;
+  }
+  .ingredient-table td { padding: 8px 10px; border-bottom: 1px solid #f9f9f8; vertical-align: middle; }
+  .ingredient-table tr:last-child td { border-bottom: none; }
+  .ingredient-table tr:hover td { background: #fafaf9; }
+
+  .check-col { width: 32px; }
+  input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: #7c3aed; }
+
+  .badge {
+    font-size: 0.7rem; font-weight: 600; padding: 2px 7px;
+    border-radius: 20px; white-space: nowrap; display: inline-block;
+  }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-orange { background: #ffedd5; color: #9a3412; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .badge-gray { background: #f3f4f6; color: #6b7280; }
+  .badge-purple { background: #ede9fe; color: #5b21b6; }
+  .badge-red { background: #fee2e2; color: #991b1b; }
+  .badge-yellow { background: #fef9c3; color: #854d0e; }
+  .badge-pink { background: #fce7f3; color: #9d174d; }
+
+  .category-header {
+    font-weight: 700; font-size: 0.82rem; color: #374151;
+    padding: 10px 10px 4px; background: #f9f9f8;
+    border-bottom: 1px solid #f3f3f1;
+  }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .summary-item {
+    background: #fafaf9; border-radius: 8px; padding: 12px;
+    text-align: center; border: 1px solid #f3f3f1;
+  }
+  .summary-num { font-size: 1.6rem; font-weight: 700; }
+  .summary-label { font-size: 0.75rem; color: #787774; margin-top: 2px; }
+  .num-purple { color: #7c3aed; }
+  .num-green { color: #16a34a; }
+  .num-orange { color: #ea580c; }
+
+  .loading { display: flex; align-items: center; gap: 8px; color: #787774; font-size: 0.88rem; padding: 8px 0; }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid #e5e7eb;
+    border-top-color: #7c3aed; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty { color: #9ca3af; font-size: 0.88rem; padding: 20px; text-align: center; }
+  .error-msg { color: #ef4444; font-size: 0.85rem; margin-top: 8px; }
+  .success-msg { color: #16a34a; font-size: 0.85rem; margin-top: 8px; font-weight: 600; }
+
+  .section-divider { height: 1px; background: #f3f3f1; margin: 6px 0; }
+
+  .select-all-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.82rem; color: #6b7280; margin-bottom: 8px;
+    padding: 6px 10px; background: #fafaf9; border-radius: 6px;
+  }
+
+  @media (max-width: 500px) {
+    .summary-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .summary-num { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🛒 Grocery List Generator</h1>
+  <p class="subtitle">Pull ingredients from your planned meals, tick off what you already have, and push the rest straight to your Grocery List.</p>
+
+  <!-- Step tracker -->
+  <div class="card">
+    <div class="card-title">Progress</div>
+    <div class="step-row">
+      <div class="step-num">1</div>
+      <div class="step-text">Load planned meals & ingredients from Notion</div>
+      <div class="step-status status-pending" id="s1">—</div>
+    </div>
+    <div class="step-row">
+      <div class="step-num">2</div>
+      <div class="step-text">Cross-check against Kitchen Inventory</div>
+      <div class="step-status status-pending" id="s2">—</div>
+    </div>
+    <div class="step-row">
+      <div class="step-num">3</div>
+      <div class="step-text">Review & confirm what to add to Grocery List</div>
+      <div class="step-status status-pending" id="s3">—</div>
+    </div>
+    <div class="step-row">
+      <div class="step-num">4</div>
+      <div class="step-text">Push missing items to Notion Grocery List</div>
+      <div class="step-status status-pending" id="s4">—</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card">
+    <div class="btn-row">
+      <button class="btn-primary" id="loadBtn" onclick="loadIngredients()">📦 Load from Meal Planner</button>
+      <button class="btn-secondary" onclick="reset()">↺ Reset</button>
+    </div>
+    <div id="loadStatus"></div>
+  </div>
+
+  <!-- Summary -->
+  <div class="card" id="summaryCard" style="display:none">
+    <div class="card-title">Summary</div>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="summary-num num-purple" id="totalCount">0</div>
+        <div class="summary-label">Total Ingredients</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-num num-green" id="inStockCount">0</div>
+        <div class="summary-label">In Stock</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-num num-orange" id="needCount">0</div>
+        <div class="summary-label">Need to Buy</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ingredient review table -->
+  <div class="card" id="reviewCard" style="display:none">
+    <div class="card-title">Review Ingredients</div>
+    <p style="font-size:0.83rem;color:#787774;margin-bottom:10px;">
+      ✅ = Already in your Kitchen Inventory &nbsp;|&nbsp; Unticked = needs buying. Adjust before pushing to Grocery List.
+    </p>
+    <div class="select-all-row">
+      <input type="checkbox" id="selectAllInStock" onchange="toggleAllInStock(this.checked)">
+      <label for="selectAllInStock">Mark all as in stock</label>
+      &nbsp;&nbsp;
+      <input type="checkbox" id="selectAllAdd" onchange="toggleAllAdd(this.checked)" checked>
+      <label for="selectAllAdd">Add all missing to grocery list</label>
+    </div>
+    <div id="ingredientTable"></div>
+
+    <div style="margin-top:14px;" class="btn-row">
+      <button class="btn-green" id="pushBtn" onclick="pushToGroceryList()" disabled>
+        🛒 Push to Grocery List
+      </button>
+    </div>
+    <div id="pushStatus"></div>
+  </div>
+</div>
+
+<script>
+// Notion data source IDs
+const DS = {
+  mealPlanner:       '32c23928-9032-44e8-ab9b-350bd1ad6a9c',
+  ingredientPlanner: 'd1b97167-81ab-489e-8923-e23f57f57c22',
+  recipes:           '66ed8a88-0fcf-400a-8836-fe6e97ecbc91',
+  inventory:         'f84a7a87-4ae0-4e26-91dd-1bdb34b481b8',
+  groceryList:       '039dbd3d-7367-42dd-a2f2-8e0a3cd295c3',
+};
+
+// Category colour map
+const catBadge = {
+  '🥦 Produce':       'badge-green',
+  '🥩 Meat & Fish':   'badge-red',
+  '🥛 Dairy & Eggs':  'badge-yellow',
+  '🍞 Bakery':        'badge-orange',
+  '🥫 Pantry':        'badge-orange',
+  '🧊 Frozen':        'badge-blue',
+  '🥤 Drinks':        'badge-purple',
+  '🧂 Spices & Herbs':'badge-gray',
+  '🫙 Condiments':    'badge-pink',
+  '🛒 Other':         'badge-gray',
+};
+
+// Map Ingredient Planner categories → Grocery List categories
+const catMap = {
+  '🥦 Produce':       'Produce',
+  '🥩 Meat & Fish':   'Meat & Fish',
+  '🥛 Dairy & Eggs':  'Dairy & Eggs',
+  '🍞 Bakery':        'Bakery',
+  '🥫 Pantry':        'Pantry',
+  '🧊 Frozen':        'Frozen',
+  '🥤 Drinks':        'Drinks',
+  '🧂 Spices & Herbs':'Pantry',
+  '🫙 Condiments':    'Pantry',
+  '🛒 Other':         'Other',
+};
+
+let ingredients = []; // { name, qty, category, mealSlot, inStock, addToList }
+
+function setStep(n, state, text) {
+  const el = document.getElementById('s' + n);
+  el.className = 'step-status status-' + state;
+  el.textContent = text;
+}
+function setProgress(pct) {
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+function setLoadStatus(html) { document.getElementById('loadStatus').innerHTML = html; }
+function setPushStatus(html) { document.getElementById('pushStatus').innerHTML = html; }
+
+async function callClaude(messages, system) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: system || '',
+      messages,
+      mcp_servers: [{ type: 'url', url: 'https://mcp.notion.com/mcp', name: 'notion' }]
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  const texts = data.content.filter(b => b.type === 'text').map(b => b.text);
+  const toolResults = data.content.filter(b => b.type === 'mcp_tool_result').map(b => b.content?.[0]?.text || '');
+  return [...texts, ...toolResults].join('\n');
+}
+
+async function loadIngredients() {
+  const btn = document.getElementById('loadBtn');
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+  setProgress(5);
+
+  try {
+    // Step 1 — fetch ingredient planner + meal planner
+    setStep(1, 'pending', '⏳');
+    setLoadStatus('<div class="loading"><div class="spinner"></div>Reading your Ingredient Planner and Meal Planner from Notion…</div>');
+
+    const raw1 = await callClaude([{ role: 'user', content:
+      `Fetch all rows from the Notion Ingredient Planner database (data source collection://${DS.ingredientPlanner}).
+       For each row return: Ingredient name, Quantity, Category, In Stock (true/false), and the linked Meal Slot name if available.
+       Also fetch the Meal Planner (collection://${DS.mealPlanner}) to get the Date for each meal slot.
+       Return a JSON array (no markdown, no preamble) like:
+       [{"name":"Beef mince","qty":"500g","category":"🥩 Meat & Fish","mealSlot":"Wednesday Dinner","date":"2026-03-19","inStock":false}]
+       If Ingredient Planner is empty, return [].`
+    }], 'Return only JSON, no markdown fences, no preamble.');
+
+    setProgress(35);
+    setStep(1, 'done', '✅');
+
+    // Step 2 — cross-check inventory
+    setStep(2, 'pending', '⏳');
+    setLoadStatus('<div class="loading"><div class="spinner"></div>Checking Kitchen Inventory…</div>');
+
+    const raw2 = await callClaude([{ role: 'user', content:
+      `Fetch all items from Kitchen Inventory (collection://${DS.inventory}). Return a JSON array of item names only, lowercase. No markdown.`
+    }], 'Return only a JSON array of strings. No markdown, no preamble.');
+
+    setProgress(60);
+    setStep(2, 'done', '✅');
+
+    // Parse both
+    let parsed = [];
+    let inventory = [];
+    try {
+      const j1 = raw1.match(/\[[\s\S]*\]/);
+      parsed = j1 ? JSON.parse(j1[0]) : [];
+    } catch(e) { parsed = []; }
+    try {
+      const j2 = raw2.match(/\[[\s\S]*\]/);
+      inventory = j2 ? JSON.parse(j2[0]).map(s => s.toLowerCase()) : [];
+    } catch(e) { inventory = []; }
+
+    // If ingredient planner is empty, parse from recipe ingredients via Claude
+    if (parsed.length === 0) {
+      setLoadStatus('<div class="loading"><div class="spinner"></div>No items in Ingredient Planner yet — reading ingredients directly from planned recipes…</div>');
+      const raw3 = await callClaude([{ role: 'user', content:
+        `Fetch the Meal Planner (collection://${DS.mealPlanner}) and get all planned meals with their linked Recipe.
+         Then fetch the Recipes (collection://${DS.recipes}) and for each planned recipe, parse its Ingredients field into individual items.
+         Return a JSON array (no markdown) like:
+         [{"name":"Beef mince","qty":"500g","category":"🥩 Meat & Fish","mealSlot":"Wednesday Dinner","date":"2026-03-19","inStock":false}]
+         Guess the category from the ingredient name. Return [] if no planned recipes found.`
+      }], 'Return only JSON array, no markdown, no preamble.');
+      try {
+        const j3 = raw3.match(/\[[\s\S]*\]/);
+        parsed = j3 ? JSON.parse(j3[0]) : [];
+      } catch(e) { parsed = []; }
+    }
+
+    setProgress(75);
+
+    // Mark in-stock based on inventory fuzzy match
+    ingredients = parsed.map(ing => {
+      const nameLower = ing.name.toLowerCase();
+      const stockMatch = inventory.some(item =>
+        item.includes(nameLower.split(' ').pop()) ||
+        nameLower.includes(item.split(' ').pop()) ||
+        item === nameLower
+      );
+      return {
+        name: ing.name || 'Unknown',
+        qty: ing.qty || '',
+        category: ing.category || '🛒 Other',
+        mealSlot: ing.mealSlot || '',
+        date: ing.date || '',
+        inStock: ing.inStock || stockMatch,
+        addToList: !(ing.inStock || stockMatch),
+      };
+    });
+
+    setProgress(90);
+    setStep(3, 'pending', '📝');
+    renderTable();
+    updateSummary();
+
+    document.getElementById('summaryCard').style.display = 'block';
+    document.getElementById('reviewCard').style.display = 'block';
+    document.getElementById('pushBtn').disabled = false;
+
+    const missing = ingredients.filter(i => !i.inStock).length;
+    setLoadStatus(missing > 0
+      ? `<p class="success-msg">✅ Loaded ${ingredients.length} ingredients — ${missing} need buying. Review below then push to Grocery List.</p>`
+      : `<p class="success-msg">✅ All ${ingredients.length} ingredients are in stock — nothing to buy!</p>`
+    );
+
+    setProgress(100);
+    setStep(3, 'done', '✅');
+
+  } catch(e) {
+    setStep(1, 'error', '❌');
+    setLoadStatus(`<p class="error-msg">Error: ${e.message}</p>`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📦 Load from Meal Planner';
+  }
+}
+
+function renderTable() {
+  const grouped = {};
+  ingredients.forEach((ing, idx) => {
+    if (!grouped[ing.category]) grouped[ing.category] = [];
+    grouped[ing.category].push({ ...ing, idx });
+  });
+
+  let html = '<table class="ingredient-table"><thead><tr>' +
+    '<th class="check-col">Stock</th>' +
+    '<th>Ingredient</th>' +
+    '<th>Qty</th>' +
+    '<th>Meal Slot</th>' +
+    '<th class="check-col">Add</th>' +
+    '</tr></thead><tbody>';
+
+  Object.entries(grouped).sort().forEach(([cat, items]) => {
+    const badge = catBadge[cat] || 'badge-gray';
+    html += `<tr><td colspan="5" class="category-header"><span class="badge ${badge}">${cat}</span></td></tr>`;
+    items.forEach(({ name, qty, mealSlot, date, inStock, addToList, idx }) => {
+      const dateStr = date ? ` <span style="color:#9ca3af;font-size:0.78rem">(${date})</span>` : '';
+      html += `<tr>
+        <td><input type="checkbox" ${inStock ? 'checked' : ''} onchange="toggleStock(${idx}, this.checked)"></td>
+        <td>${name}</td>
+        <td style="color:#6b7280">${qty}</td>
+        <td style="color:#6b7280;font-size:0.8rem">${mealSlot}${dateStr}</td>
+        <td><input type="checkbox" ${addToList ? 'checked' : ''} onchange="toggleAdd(${idx}, this.checked)" ${inStock ? 'disabled style="opacity:0.3"' : ''}></td>
+      </tr>`;
+    });
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('ingredientTable').innerHTML = html;
+}
+
+function toggleStock(idx, checked) {
+  ingredients[idx].inStock = checked;
+  if (checked) ingredients[idx].addToList = false;
+  else ingredients[idx].addToList = true;
+  updateSummary();
+  renderTable();
+}
+function toggleAdd(idx, checked) {
+  ingredients[idx].addToList = checked;
+  updateSummary();
+}
+function toggleAllInStock(checked) {
+  ingredients.forEach(i => {
+    i.inStock = checked;
+    if (checked) i.addToList = false;
+  });
+  updateSummary(); renderTable();
+}
+function toggleAllAdd(checked) {
+  ingredients.filter(i => !i.inStock).forEach(i => i.addToList = checked);
+  updateSummary(); renderTable();
+}
+
+function updateSummary() {
+  const inStock = ingredients.filter(i => i.inStock).length;
+  const toAdd = ingredients.filter(i => i.addToList && !i.inStock).length;
+  document.getElementById('totalCount').textContent = ingredients.length;
+  document.getElementById('inStockCount').textContent = inStock;
+  document.getElementById('needCount').textContent = toAdd;
+  document.getElementById('pushBtn').disabled = toAdd === 0;
+}
+
+async function pushToGroceryList() {
+  const toAdd = ingredients.filter(i => i.addToList && !i.inStock);
+  if (toAdd.length === 0) return;
+
+  const btn = document.getElementById('pushBtn');
+  btn.disabled = true; btn.textContent = 'Pushing…';
+  setStep(4, 'pending', '⏳');
+  setPushStatus('<div class="loading"><div class="spinner"></div>Adding items to your Notion Grocery List…</div>');
+
+  try {
+    // Build the items list for Claude to create
+    const itemsJson = JSON.stringify(toAdd.map(i => ({
+      item: i.name,
+      quantity: i.qty,
+      category: catMap[i.category] || 'Other',
+    })));
+
+    await callClaude([{ role: 'user', content:
+      `Create these items in the Grocery List Notion database (data source collection://${DS.groceryList}).
+       For each item set: Item = name, Quantity = qty, Category = category, Checked Off = false.
+       Items: ${itemsJson}
+       Confirm once done.`
+    }], 'You are a Notion assistant. Create the specified pages using the Notion MCP tool. Confirm when done.');
+
+    setStep(4, 'done', '✅');
+    setProgress(100);
+    setPushStatus(`<p class="success-msg">✅ ${toAdd.length} item${toAdd.length > 1 ? 's' : ''} added to your Grocery List in Notion!</p>`);
+    
+    // Mark as added locally
+    ingredients.forEach(i => { if (i.addToList && !i.inStock) i.addToList = false; });
+    updateSummary(); renderTable();
+
+  } catch(e) {
+    setStep(4, 'error', '❌');
+    setPushStatus(`<p class="error-msg">Error pushing to Grocery List: ${e.message}</p>`);
+    btn.disabled = false; btn.textContent = '🛒 Push to Grocery List';
+  }
+}
+
+function reset() {
+  ingredients = [];
+  ['s1','s2','s3','s4'].forEach(id => {
+    const el = document.getElementById(id);
+    el.className = 'step-status status-pending'; el.textContent = '—';
+  });
+  setProgress(0);
+  setLoadStatus(''); setPushStatus('');
+  document.getElementById('summaryCard').style.display = 'none';
+  document.getElementById('reviewCard').style.display = 'none';
+  document.getElementById('ingredientTable').innerHTML = '';
+  document.getElementById('pushBtn').disabled = true;
+}
+</script>
+</body>
+</html>
