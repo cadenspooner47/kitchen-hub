@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Importer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f6f3; color: #37352f; min-height: 100vh; padding: 24px 16px; }
+  .container { max-width: 740px; margin: 0 auto; }
+  h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #787774; margin-bottom: 24px; font-size: 0.93rem; }
+  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 14px; border: 1px solid #e9e9e7; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .card-title { font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em; color: #9ca3af; margin-bottom: 12px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 14px; }
+  .tab { padding: 7px 14px; border-radius: 7px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 600; background: #f3f4f6; color: #6b7280; transition: all 0.15s; }
+  .tab.active { background: #dbeafe; color: #1d4ed8; }
+  input[type="url"], textarea { width: 100%; border: 1px solid #e3e3e1; border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; font-family: inherit; background: #fbfaf8; transition: border-color 0.2s; }
+  input[type="url"]:focus, textarea:focus { outline: none; border-color: #93c5fd; }
+  textarea { resize: vertical; min-height: 100px; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  button { padding: 9px 18px; border-radius: 8px; border: none; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: #2563eb; color: white; }
+  .btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+  .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+  .btn-green { background: #16a34a; color: white; }
+  .btn-green:hover:not(:disabled) { background: #15803d; }
+  .btn-green:disabled { background: #86efac; cursor: not-allowed; }
+  .btn-ghost { background: #f3f4f6; color: #374151; }
+  .btn-ghost:hover { background: #e5e7eb; }
+  .progress-bar { height: 4px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin-top: 10px; }
+  .progress-fill { height: 100%; background: #2563eb; border-radius: 3px; transition: width 0.35s ease; }
+  .loading { display: flex; align-items: center; gap: 8px; color: #787774; font-size: 0.88rem; padding: 10px 0; }
+  .spinner { width: 16px; height: 16px; border: 2px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .msg-error { color: #ef4444; font-size: 0.85rem; margin-top: 8px; }
+  .msg-success { color: #16a34a; font-size: 0.85rem; margin-top: 8px; font-weight: 600; }
+  .preview-card { border: 1px solid #e9e9e7; border-radius: 10px; padding: 18px; margin-bottom: 12px; background: white; }
+  .preview-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+  .preview-title-input { font-weight: 700; font-size: 1rem; border: 1px solid transparent; border-radius: 6px; padding: 3px 7px; width: 100%; background: transparent; font-family: inherit; }
+  .preview-title-input:hover { border-color: #e3e3e1; background: #fbfaf8; }
+  .preview-title-input:focus { outline: none; border-color: #93c5fd; background: white; }
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .meta-item label { font-size: 0.72rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 3px; }
+  .meta-item select, .meta-item input[type="text"] { width: 100%; border: 1px solid #e3e3e1; border-radius: 6px; padding: 6px 8px; font-size: 0.83rem; background: #fbfaf8; font-family: inherit; }
+  .meta-item select:focus, .meta-item input[type="text"]:focus { outline: none; border-color: #93c5fd; }
+  .cover-letter-box { border: 1px solid #dbeafe; border-radius: 8px; padding: 14px; background: #f0f7ff; margin-top: 10px; }
+  .cover-letter-label { font-size: 0.75rem; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .cover-letter-box textarea { background: white; font-size: 0.84rem; line-height: 1.6; min-height: 200px; }
+  .section-label { font-size: 0.75rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; margin: 12px 0 6px; }
+  .desc-box { font-size: 0.84rem; color: #555; line-height: 1.6; background: #fafaf9; border-radius: 7px; padding: 12px; border: 1px solid #f0f0ee; }
+  .badge { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; display: inline-block; }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .divider { height: 1px; background: #f3f3f1; margin: 12px 0; }
+  .queue-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f3f3f1; font-size: 0.85rem; }
+  .queue-item:last-child { border-bottom: none; }
+  .queue-url { flex: 1; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .queue-status { font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+  .qs-waiting { color: #9ca3af; } .qs-processing { color: #2563eb; } .qs-done { color: #16a34a; } .qs-error { color: #ef4444; }
+  .queue-remove { background: none; border: none; color: #d1d5db; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+  .queue-remove:hover { color: #ef4444; background: #fee2e2; }
+  .action-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; background: #fafaf9; border-radius: 8px; border: 1px solid #f0f0ee; margin-bottom: 10px; }
+  .action-bar span { font-size: 0.82rem; color: #787774; flex: 1; }
+  @media (max-width: 500px) { .meta-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>💼 Job Importer</h1>
+  <p class="subtitle">Paste a job listing URL to auto-parse the role, detect the cover letter type, draft a cover letter, and save straight to <strong>Drafting</strong> in your tracker.</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchMode('url')">🔗 Single URL</button>
+    <button class="tab" onclick="switchMode('batch')">📋 Batch URLs</button>
+    <button class="tab" onclick="switchMode('text')">📄 Paste Text</button>
+  </div>
+
+  <div class="card" id="inputCard">
+    <div id="modeUrl">
+      <div class="card-title">Job Listing URL</div>
+      <input type="url" id="singleUrl" placeholder="https://www.linkedin.com/jobs/view/... or reed.co.uk, indeed.com etc." />
+      <div class="btn-row">
+        <button class="btn-primary" onclick="parseSingle()" id="parseBtn">✨ Parse Job</button>
+      </div>
+      <div id="singleStatus"></div>
+      <div class="progress-bar" id="singleProgress" style="display:none"><div class="progress-fill" id="singleFill" style="width:0%"></div></div>
+    </div>
+
+    <div id="modeBatch" style="display:none">
+      <div class="card-title">Batch URLs — one per line</div>
+      <textarea id="batchUrls" placeholder="https://www.linkedin.com/jobs/view/123&#10;https://www.reed.co.uk/jobs/football-coach/456&#10;https://www.indeed.com/viewjob?jk=789"></textarea>
+      <div class="btn-row"><button class="btn-primary" onclick="loadBatch()">📋 Load to Queue</button></div>
+    </div>
+
+    <div id="modeText" style="display:none">
+      <div class="card-title">Paste Job Listing Text</div>
+      <textarea id="pasteText" style="min-height:140px" placeholder="Paste the full job listing text here — title, organisation, description, requirements and all."></textarea>
+      <div class="btn-row"><button class="btn-primary" onclick="parseText()" id="textBtn">✨ Parse Pasted Text</button></div>
+      <div id="textStatus"></div>
+      <div class="progress-bar" id="textProgress" style="display:none"><div class="progress-fill" id="textFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="card" id="queueCard" style="display:none">
+    <div class="card-title">Queue</div>
+    <div class="action-bar">
+      <span id="queueSummary">0 URLs loaded</span>
+      <button class="btn-primary" onclick="processQueue()" id="processQueueBtn">▶ Process All</button>
+      <button class="btn-ghost" onclick="clearQueue()">✕ Clear</button>
+    </div>
+    <div id="queueList"></div>
+    <div id="queueStatus"></div>
+  </div>
+
+  <div id="previewArea"></div>
+</div>
+
+<script>
+const NOTION_MCP = 'https://mcp.notion.com/mcp';
+const JOBS_DS    = '29dc7279-2c19-45f3-a57b-5267620828c6';
+const MODEL      = 'claude-sonnet-4-20250514';
+const API        = 'https://api.anthropic.com/v1/messages';
+
+const COVER_LETTER_TYPES = ['Football Coaching','Athletic Training / S&C','Education / Teaching','Youth Work / Social Dev','Data Analysis / Research','Other'];
+
+let queue = [], previews = [];
+
+function el(id)            { return document.getElementById(id); }
+function setHtml(id, html) { el(id).innerHTML = html; }
+function show(id)          { el(id).style.display = ''; }
+function hide(id)          { el(id).style.display = 'none'; }
+function setProgress(f,b,p){ show(b); el(f).style.width = p+'%'; }
+function loading(msg)      { return `<div class="loading"><div class="spinner"></div>${msg}</div>`; }
+function escHtml(s)        { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function switchMode(mode) {
+  ['url','batch','text'].forEach((m,i) => {
+    el('mode'+m[0].toUpperCase()+m.slice(1)).style.display = m===mode?'':'none';
+    document.querySelectorAll('.tab')[i].classList.toggle('active', m===mode);
+  });
+  hide('queueCard');
+}
+
+async function callClaude(messages, system, useMCP) {
+  const body = { model: MODEL, max_tokens: 1000, system: system||'', messages };
+  if (useMCP) body.mcp_servers = [{ type:'url', url:NOTION_MCP, name:'notion' }];
+  const res  = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return [...data.content.filter(b=>b.type==='text').map(b=>b.text),
+          ...data.content.filter(b=>b.type==='mcp_tool_result').map(b=>b.content?.[0]?.text||'')].join('\n');
+}
+
+async function fetchUrl(url) {
+  return callClaude([{role:'user',content:`Fetch the full visible text content of this page: ${url}`}],
+    'Retrieve full page text. Return only the content, no commentary.',false);
+}
+
+const PARSE_SYSTEM = `Extract job info and return ONLY this JSON (no markdown, no preamble):
+{"roleTitle":"","organisation":"","location":"","jobType":"one of: Football Coaching|Athletic Training / S&C|Education / Teaching|Youth Work / Social Dev|Data Analysis / Research|Other","description":"2-4 sentence summary","requirements":["req1","req2"],"salary":"or null","applicationDeadline":"YYYY-MM-DD if found anywhere on the page (closing date, deadline, apply by, expires) — else null","sourceUrl":""}
+jobType rules: Football Coaching=coaching/football/soccer/manager/academy; Athletic Training/S&C=strength/conditioning/S&C/sports science/fitness; Education/Teaching=teacher/tutor/lecturer/school/college/PGCE; Youth Work/Social Dev=youth worker/community/charity/outreach; Data Analysis/Research=data analyst/researcher/SQL/python/analytics; Other=anything else.
+For applicationDeadline: look for any mention of closing date, deadline, apply by, application deadline, expires, last date to apply. Convert to YYYY-MM-DD. If no date found, return null.`;
+
+async function parseJobText(text, sourceUrl) {
+  const raw = await callClaude([{role:'user',content:`Parse this job listing.\nSource: ${sourceUrl||'unknown'}\n\n${text.slice(0,8000)}`}], PARSE_SYSTEM, false);
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('Could not extract job structure from page');
+  return JSON.parse(m[0]);
+}
+
+async function generateCoverLetter(job) {
+  const raw = await callClaude([{role:'user',content:`Write a professional 3-4 paragraph cover letter for:
+Role: ${job.roleTitle}
+Organisation: ${job.organisation}
+Location: ${job.location}
+Type: ${job.jobType}
+Description: ${job.description}
+Requirements: ${(job.requirements||[]).join(', ')}
+
+Guidelines: Be enthusiastic and specific. Reference the organisation by name. Connect the applicant's background in ${job.jobType} to the requirements. End with a clear call to action. Do NOT use placeholder brackets. Start with "Dear Hiring Team," or "Dear [Organisation] Team,"`}],
+    'You are an expert cover letter writer. Return only the cover letter text, no preamble.', false);
+  return raw.trim();
+}
+
+function deadlineBadge(deadline) {
+  if (!deadline) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(deadline);
+  const days = Math.round((due - today) / 86400000);
+  if (days < 0)  return `<div style="margin-bottom:10px"><span class="badge" style="background:#fee2e2;color:#991b1b">⛔ Deadline passed (${deadline})</span></div>`;
+  if (days === 0) return `<div style="margin-bottom:10px"><span class="badge" style="background:#fee2e2;color:#991b1b">🚨 Deadline TODAY</span></div>`;
+  if (days <= 3)  return `<div style="margin-bottom:10px"><span class="badge" style="background:#ffedd5;color:#9a3412">🔥 ${days} day${days!==1?'s':''} left (${deadline})</span></div>`;
+  if (days <= 7)  return `<div style="margin-bottom:10px"><span class="badge" style="background:#fef9c3;color:#854d0e">⚠️ ${days} days left (${deadline})</span></div>`;
+  return `<div style="margin-bottom:10px"><span class="badge" style="background:#dcfce7;color:#166534">📅 ${days} days left (${deadline})</span></div>`;
+}
+
+async function saveJobToNotion(job, coverLetter) {
+  const content = `## 📋 Role Overview\n\n| | |\n|---|---|\n| 🏢 Organisation | ${job.organisation||''} |\n| 📍 Location | ${job.location||''} |\n| 💼 Job Type | ${job.jobType||''} |\n| 💰 Salary | ${job.salary||'Not specified'} |\n| ⏰ Application Deadline | ${job.applicationDeadline||'Not specified'} |\n\n---\n\n## 📝 Description\n\n${job.description||''}\n\n---\n\n## ✅ Key Requirements\n\n${(job.requirements||[]).map(r=>'- '+r).join('\n')}\n\n---\n\n## ✉️ Cover Letter Draft\n\n${coverLetter||'_No cover letter generated yet._'}\n\n---\n\n## 📎 Notes\n\n> Add interview notes, contacts, and follow-up actions here.`;
+
+  const deadlineProp = job.applicationDeadline
+    ? `- date:Application Deadline:start: "${job.applicationDeadline}"\n- date:Application Deadline:is_datetime: 0`
+    : '';
+
+  const result = await callClaude([{role:'user',content:`Create a new page in Notion Job Application Tracker (collection://${JOBS_DS}) with:
+- Role Title: "${job.roleTitle}"
+- Organisation: "${job.organisation||''}"
+- Location: "${job.location||''}"
+- Stage: "Drafting"
+- Cover Letter Template: "${job.jobType||'Other'}"
+- Job Posting: "${job.sourceUrl||''}"
+${deadlineProp}
+
+Page content:\n${content}\n\nConfirm with the page URL.`}],
+    'You are a Notion assistant. Create the page using Notion MCP tools. Confirm with URL when done.', true);
+
+  const m = result.match(/https:\/\/www\.notion\.so\/[a-z0-9]+/i);
+  return m ? m[0] : null;
+}
+
+async function parseSingle() {
+  const url = el('singleUrl').value.trim();
+  if (!url) { setHtml('singleStatus','<p class="msg-error">Please enter a URL.</p>'); return; }
+  const btn = el('parseBtn'); btn.disabled=true; btn.textContent='Parsing…';
+  setHtml('singleStatus',loading('Fetching job listing…')); setProgress('singleFill','singleProgress',10);
+  try {
+    const pageText = await fetchUrl(url);
+    setHtml('singleStatus',loading('Extracting job details…')); setProgress('singleFill','singleProgress',40);
+    const job = await parseJobText(pageText, url); job.sourceUrl = url;
+    setHtml('singleStatus',loading('Drafting cover letter…')); setProgress('singleFill','singleProgress',70);
+    const coverLetter = await generateCoverLetter(job);
+    setProgress('singleFill','singleProgress',100);
+    setHtml('singleStatus','<p class="msg-success">✅ Parsed! Review and edit below before saving.</p>');
+    previews = [{job, coverLetter, saved:false}]; renderPreviews();
+  } catch(e) { setHtml('singleStatus',`<p class="msg-error">Error: ${e.message}</p>`); hide('singleProgress'); }
+  finally { btn.disabled=false; btn.textContent='✨ Parse Job'; }
+}
+
+async function parseText() {
+  const text = el('pasteText').value.trim();
+  if (!text) { setHtml('textStatus','<p class="msg-error">Please paste some job listing text.</p>'); return; }
+  const btn = el('textBtn'); btn.disabled=true; btn.textContent='Parsing…';
+  setHtml('textStatus',loading('Extracting job details…')); setProgress('textFill','textProgress',25);
+  try {
+    const job = await parseJobText(text,'');
+    setHtml('textStatus',loading('Drafting cover letter…')); setProgress('textFill','textProgress',65);
+    const coverLetter = await generateCoverLetter(job);
+    setProgress('textFill','textProgress',100);
+    setHtml('textStatus','<p class="msg-success">✅ Parsed! Review and edit below before saving.</p>');
+    previews = [{job, coverLetter, saved:false}]; renderPreviews();
+  } catch(e) { setHtml('textStatus',`<p class="msg-error">Error: ${e.message}</p>`); hide('textProgress'); }
+  finally { btn.disabled=false; btn.textContent='✨ Parse Pasted Text'; }
+}
+
+function loadBatch() {
+  const lines = el('batchUrls').value.split('\n').map(l=>l.trim()).filter(l=>l.startsWith('http'));
+  if (!lines.length) { alert('No valid URLs found.'); return; }
+  queue = lines.map(url=>({url,status:'waiting',job:null,coverLetter:null}));
+  show('queueCard'); renderQueue();
+}
+
+function renderQueue() {
+  el('queueSummary').textContent = `${queue.length} URL${queue.length!==1?'s':''} — ${queue.filter(q=>q.status==='done').length} done`;
+  setHtml('queueList', queue.map((item,i)=>`
+    <div class="queue-item">
+      <div class="queue-url">${item.url}</div>
+      <span class="queue-status qs-${item.status}">${item.status==='waiting'?'⏳ Waiting':item.status==='processing'?'⚡ Parsing…':item.status==='done'?'✅ Done':'❌ Error'}</span>
+      ${item.status==='waiting'?`<button class="queue-remove" onclick="queue.splice(${i},1);renderQueue()">✕</button>`:''}
+    </div>`).join(''));
+}
+
+function clearQueue() { queue=[]; hide('queueCard'); setHtml('previewArea',''); }
+
+async function processQueue() {
+  const btn=el('processQueueBtn'); btn.disabled=true; btn.textContent='⏳ Processing…';
+  previews=[];
+  for (let i=0;i<queue.length;i++) {
+    if (queue[i].status==='done') continue;
+    queue[i].status='processing'; renderQueue();
+    try {
+      const pageText=await fetchUrl(queue[i].url);
+      const job=await parseJobText(pageText,queue[i].url); job.sourceUrl=queue[i].url;
+      const coverLetter=await generateCoverLetter(job);
+      queue[i].job=job; queue[i].coverLetter=coverLetter; queue[i].status='done';
+      previews.push({job,coverLetter,saved:false});
+    } catch(e) { queue[i].status='error'; }
+    renderQueue(); renderPreviews();
+  }
+  btn.disabled=false; btn.textContent='▶ Process All';
+  setHtml('queueStatus',`<p class="msg-success">✅ Done — ${previews.length} job${previews.length!==1?'s':''} ready to review below.</p>`);
+}
+
+function renderPreviews() {
+  if (!previews.length) { setHtml('previewArea',''); return; }
+  const hasUnsaved = previews.some(p=>!p.saved);
+  let html = `<div class="card"><div class="card-title">Review & Edit — ${previews.length} Job${previews.length!==1?'s':''}</div>
+    ${hasUnsaved
+      ?`<div class="action-bar" style="margin-bottom:14px"><span>${previews.filter(p=>!p.saved).length} unsaved</span><button class="btn-green" onclick="saveAll()" id="saveAllBtn">💾 Save All to Notion</button></div>`
+      :'<p class="msg-success" style="margin-bottom:14px">✅ All jobs saved to Notion in Drafting!</p>'}`;
+
+  previews.forEach((p,idx)=>{
+    const j=p.job;
+    html+=`<div class="preview-card" id="preview-${idx}">
+      <div class="preview-header">
+        <input class="preview-title-input" type="text" value="${escHtml(j.roleTitle||'')}" onchange="previews[${idx}].job.roleTitle=this.value" />
+        ${p.saved?'<span class="badge badge-green">✅ Saved to Drafting</span>':`<button class="btn-green" onclick="saveSingle(${idx})" id="saveBtn-${idx}">💾 Save</button>`}
+      </div>
+      <div class="meta-grid">
+        <div class="meta-item"><label>Organisation</label><input type="text" value="${escHtml(j.organisation||'')}" onchange="previews[${idx}].job.organisation=this.value" /></div>
+        <div class="meta-item"><label>Location</label><input type="text" value="${escHtml(j.location||'')}" onchange="previews[${idx}].job.location=this.value" /></div>
+        <div class="meta-item"><label>Cover Letter Type</label>
+          <select onchange="previews[${idx}].job.jobType=this.value;regenerateCoverLetter(${idx})">
+            ${COVER_LETTER_TYPES.map(t=>`<option ${j.jobType===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="meta-item"><label>Salary</label><input type="text" value="${escHtml(j.salary||'')}" onchange="previews[${idx}].job.salary=this.value" /></div>
+        <div class="meta-item"><label>Application Deadline</label><input type="date" value="${escHtml(j.applicationDeadline||'')}" onchange="previews[${idx}].job.applicationDeadline=this.value||null" style="width:100%;border:1px solid #e3e3e1;border-radius:6px;padding:6px 8px;font-size:0.83rem;background:#fbfaf8;font-family:inherit" /></div>
+      </div>
+      ${deadlineBadge(j.applicationDeadline)}
+      <div class="section-label">📝 Role Summary</div>
+      <div class="desc-box">${escHtml(j.description||'')}</div>
+      <div class="cover-letter-box">
+        <div class="cover-letter-label">✉️ Cover Letter Draft
+          <button class="btn-ghost" style="font-size:0.78rem;padding:3px 8px" onclick="regenerateCoverLetter(${idx})" id="regenBtn-${idx}">↺ Regenerate</button>
+        </div>
+        <textarea id="coverLetter-${idx}" onchange="previews[${idx}].coverLetter=this.value">${escHtml(p.coverLetter||'')}</textarea>
+      </div>
+      <div id="saveStatus-${idx}"></div>
+    </div>`;
+  });
+  setHtml('previewArea', html+'</div>');
+}
+
+async function regenerateCoverLetter(idx) {
+  const btn=el(`regenBtn-${idx}`), ta=el(`coverLetter-${idx}`);
+  if(btn){btn.disabled=true;btn.textContent='Generating…';} if(ta)ta.style.opacity='0.4';
+  try {
+    const newLetter=await generateCoverLetter(previews[idx].job);
+    previews[idx].coverLetter=newLetter;
+    if(ta){ta.value=newLetter;ta.style.opacity='1';}
+  } catch(e){if(ta)ta.style.opacity='1';}
+  finally{if(btn){btn.disabled=false;btn.textContent='↺ Regenerate';}}
+}
+
+async function saveSingle(idx) {
+  const ta=el(`coverLetter-${idx}`); if(ta) previews[idx].coverLetter=ta.value;
+  const btn=el(`saveBtn-${idx}`); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  setHtml(`saveStatus-${idx}`,loading('Saving to Notion Drafting…'));
+  try {
+    const notionUrl=await saveJobToNotion(previews[idx].job,previews[idx].coverLetter);
+    previews[idx].saved=true;
+    setHtml(`saveStatus-${idx}`,`<p class="msg-success">✅ Added to Drafting! ${notionUrl?`<a href="${notionUrl}" target="_blank" style="color:#16a34a">Open in Notion →</a>`:''}</p>`);
+    renderPreviews();
+  } catch(e){if(btn){btn.disabled=false;btn.textContent='💾 Save';}setHtml(`saveStatus-${idx}`,`<p class="msg-error">Error: ${e.message}</p>`);}
+}
+
+async function saveAll() {
+  const btn=el('saveAllBtn'); if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  for(let i=0;i<previews.length;i++) if(!previews[i].saved) await saveSingle(i);
+}
+</script>
+</body>
+</html>
