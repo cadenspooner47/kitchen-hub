@@ -219,10 +219,11 @@
 // ─────────────────────────────────────────────
 // Config
 // ─────────────────────────────────────────────
+// Repo: https://cadenspooner47.github.io/notion-hub/recipe-importer.html
 const NOTION_MCP    = 'https://mcp.notion.com/mcp';
 const RECIPES_DS    = '66ed8a88-0fcf-400a-8836-fe6e97ecbc91';
 const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
-const MODEL         = 'claude-sonnet-4-20250514';
+const MODEL         = 'claude-sonnet-4-6';
 
 const MEAL_TYPES  = ['Breakfast','Lunch','Dinner','Snack','Dessert','Drinks','Sides'];
 const CUISINES    = ['British','Italian','Asian','Mexican','American','Mediterranean','Indian','French','Middle Eastern','Other'];
@@ -261,13 +262,14 @@ function switchMode(mode) {
 // ─────────────────────────────────────────────
 // Claude API helpers
 // ─────────────────────────────────────────────
-async function callClaude(messages, system, useMCP) {
+async function callClaude(messages, system, useMCP, useWebSearch) {
   const body = {
-    model: MODEL, max_tokens: 1000,
+    model: MODEL, max_tokens: 2000,
     system: system || '',
     messages
   };
   if (useMCP) body.mcp_servers = [{ type: 'url', url: NOTION_MCP, name: 'notion' }];
+  if (useWebSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
 
   const res  = await fetch(ANTHROPIC_API, {
     method: 'POST',
@@ -279,14 +281,21 @@ async function callClaude(messages, system, useMCP) {
 
   const texts   = data.content.filter(b => b.type === 'text').map(b => b.text);
   const toolRes = data.content.filter(b => b.type === 'mcp_tool_result').map(b => b.content?.[0]?.text || '');
-  return [...texts, ...toolRes].join('\n');
+  // Also capture tool_result blocks from web search
+  const searchRes = data.content.filter(b => b.type === 'tool_result').map(b =>
+    Array.isArray(b.content) ? b.content.map(c => c.text || '').join('') : (b.content || '')
+  );
+  return [...texts, ...toolRes, ...searchRes].join('\n');
 }
 
 async function fetchUrl(url) {
+  // Use web_search to find and retrieve the page content
   const raw = await callClaude([{
     role: 'user',
-    content: `Fetch the webpage at this URL and return the full visible text content of the page. URL: ${url}`
-  }], 'You are a web scraping assistant. Use the web_fetch tool or equivalent to retrieve the page content. Return the raw text of the page with no additional commentary.', false);
+    content: `Please fetch and return the full recipe content from this URL: ${url}
+
+Use the web search tool to retrieve this page. Return all the text content you find including the recipe title, ingredients list, and instructions. Do not summarise — return the full content.`
+  }], 'You are a web retrieval assistant. Use the web_search tool to fetch the given URL and return ALL the text content from the page. Include the full ingredients list and all instructions. Do not truncate or summarise.', false, true);
   return raw;
 }
 
@@ -310,7 +319,7 @@ async function parseRecipeText(text, sourceUrl) {
   const raw = await callClaude([{
     role: 'user',
     content: `Parse this recipe content into structured JSON.\n\nSource URL: ${sourceUrl || 'unknown'}\n\nContent:\n${text.slice(0, 8000)}`
-  }], PARSE_SYSTEM, false);
+  }], PARSE_SYSTEM, false, false);
 
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Could not parse recipe structure from page');
@@ -388,7 +397,7 @@ Page content (Notion Markdown):
 ${content}
 
 Confirm once created with the page URL.`
-  }], 'You are a Notion assistant. Create the page using the Notion MCP tools. Confirm with the page URL when done.', true);
+  }], 'You are a Notion assistant. Create the page using the Notion MCP tools. Confirm with the page URL when done.', true, false);
 
   const urlMatch = result.match(/https:\/\/www\.notion\.so\/[a-z0-9]+/i);
   return urlMatch ? urlMatch[0] : null;
