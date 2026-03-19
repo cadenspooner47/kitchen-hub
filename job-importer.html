@@ -116,9 +116,10 @@
 </div>
 
 <script>
+// Repo: https://cadenspooner47.github.io/notion-hub/job-importer.html
 const NOTION_MCP = 'https://mcp.notion.com/mcp';
 const JOBS_DS    = '29dc7279-2c19-45f3-a57b-5267620828c6';
-const MODEL      = 'claude-sonnet-4-20250514';
+const MODEL      = 'claude-sonnet-4-6';
 const API        = 'https://api.anthropic.com/v1/messages';
 
 const COVER_LETTER_TYPES = ['Football Coaching','Athletic Training / S&C','Education / Teaching','Youth Work / Social Dev','Data Analysis / Research','Other'];
@@ -141,19 +142,25 @@ function switchMode(mode) {
   hide('queueCard');
 }
 
-async function callClaude(messages, system, useMCP) {
-  const body = { model: MODEL, max_tokens: 1000, system: system||'', messages };
+async function callClaude(messages, system, useMCP, useWebSearch) {
+  const body = { model: MODEL, max_tokens: 2000, system: system||'', messages };
   if (useMCP) body.mcp_servers = [{ type:'url', url:NOTION_MCP, name:'notion' }];
+  if (useWebSearch) body.tools = [{ type:'web_search_20250305', name:'web_search' }];
   const res  = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
-  return [...data.content.filter(b=>b.type==='text').map(b=>b.text),
-          ...data.content.filter(b=>b.type==='mcp_tool_result').map(b=>b.content?.[0]?.text||'')].join('\n');
+  const texts     = data.content.filter(b=>b.type==='text').map(b=>b.text);
+  const toolRes   = data.content.filter(b=>b.type==='mcp_tool_result').map(b=>b.content?.[0]?.text||'');
+  const searchRes = data.content.filter(b=>b.type==='tool_result').map(b=>
+    Array.isArray(b.content)?b.content.map(c=>c.text||'').join(''):(b.content||''));
+  return [...texts,...toolRes,...searchRes].join('\n');
 }
 
 async function fetchUrl(url) {
-  return callClaude([{role:'user',content:`Fetch the full visible text content of this page: ${url}`}],
-    'Retrieve full page text. Return only the content, no commentary.',false);
+  return callClaude([{role:'user',content:`Please fetch and return the full job listing content from this URL: ${url}
+
+Use the web search tool to retrieve this page. Return all the text you find including the job title, organisation, description, requirements, salary, and any deadline or closing date. Do not summarise — return as much content as possible.`}],
+    'You are a web retrieval assistant. Use the web_search tool to fetch the given URL and return ALL the text content from the page. Include the full job description, requirements, and any dates mentioned. Do not truncate.', false, true);
 }
 
 const PARSE_SYSTEM = `Extract job info and return ONLY this JSON (no markdown, no preamble):
@@ -162,7 +169,7 @@ jobType rules: Football Coaching=coaching/football/soccer/manager/academy; Athle
 For applicationDeadline: look for any mention of closing date, deadline, apply by, application deadline, expires, last date to apply. Convert to YYYY-MM-DD. If no date found, return null.`;
 
 async function parseJobText(text, sourceUrl) {
-  const raw = await callClaude([{role:'user',content:`Parse this job listing.\nSource: ${sourceUrl||'unknown'}\n\n${text.slice(0,8000)}`}], PARSE_SYSTEM, false);
+  const raw = await callClaude([{role:'user',content:`Parse this job listing.\nSource: ${sourceUrl||'unknown'}\n\n${text.slice(0,8000)}`}], PARSE_SYSTEM, false, false);
   const m = raw.match(/\{[\s\S]*\}/);
   if (!m) throw new Error('Could not extract job structure from page');
   return JSON.parse(m[0]);
@@ -178,7 +185,7 @@ Description: ${job.description}
 Requirements: ${(job.requirements||[]).join(', ')}
 
 Guidelines: Be enthusiastic and specific. Reference the organisation by name. Connect the applicant's background in ${job.jobType} to the requirements. End with a clear call to action. Do NOT use placeholder brackets. Start with "Dear Hiring Team," or "Dear [Organisation] Team,"`}],
-    'You are an expert cover letter writer. Return only the cover letter text, no preamble.', false);
+    'You are an expert cover letter writer. Return only the cover letter text, no preamble.', false, false);
   return raw.trim();
 }
 
@@ -211,7 +218,7 @@ async function saveJobToNotion(job, coverLetter) {
 ${deadlineProp}
 
 Page content:\n${content}\n\nConfirm with the page URL.`}],
-    'You are a Notion assistant. Create the page using Notion MCP tools. Confirm with URL when done.', true);
+    'You are a Notion assistant. Create the page using Notion MCP tools. Confirm with URL when done.', true, false);
 
   const m = result.match(/https:\/\/www\.notion\.so\/[a-z0-9]+/i);
   return m ? m[0] : null;
